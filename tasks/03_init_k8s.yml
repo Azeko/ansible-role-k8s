@@ -1,0 +1,38 @@
+- name: Create kubeadm-config.yaml.j2
+  template:
+    src: "kubeadm-config.yaml.j2"
+    dest: "/tmp/kubeadm-config.yaml"
+    mode: 0644
+  tags: init_k8s
+
+- name: Check if file already exists
+  command: "ls ~/.kube/config"
+  register: admin_file_exists
+  ignore_errors: true
+  tags: init_k8s
+    
+- name: Initialize the Kubernetes cluster using kubeadm command
+  when: 
+    - admin_file_exists is failed
+  command: "kubeadm init --config /tmp/kubeadm-config.yaml" 
+  register: kube_init_result
+  tags: init_k8s
+
+- debug:
+      var: kube_init_result
+  tags: init_k8s
+
+- name: Create config directory
+  file:
+    path: "~/.kube"
+    state: directory
+  when: 
+    - admin_file_exists is failed
+  tags: init_k8s
+
+- name: Copy config for user
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "~/.kube/config"
+    remote_src: yes
+  tags: init_k8s

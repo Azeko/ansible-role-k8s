@@ -1,0 +1,35 @@
+
+ - src: https://git.sirena-travel.ru/ST/ansible-role-provisioning-libvirt.git
+   name: provisioning-libvirt
+   scm: git
+   version: 0802eec
+
+ - src: https://git.sirena-travel.ru/ST/ansible-role-common.git
+   name: common
+   scm: git
+   version: master
+
+ - src: https://git.sirena-travel.ru/ST/ansible-role-auth.git
+   name: auth
+   scm: git
+   version: master
+
+ - src: https://git.sirena-travel.ru:/ST/ansible-role-chronyd.git
+   name: chronyd
+   scm: git
+   version: master
+
+ - src: https://git.sirena-travel.ru:/ST/ansible-role-postfix.git
+   name: postfix
+   scm: git
+   version: master
+
+ - src: https://git.sirena-travel.ru/ST/ansible-role-zabbix-agent.git
+   name: zabbix-agent
+   scm: git
+   version: master
+
+ - src: https://git.sirena-travel.ru/ST/ansible-role-nagios-agent
+   name: nagios
+   scm: git
+   version: master

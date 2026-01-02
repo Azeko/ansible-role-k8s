@@ -1,0 +1,44 @@
+load_module '/usr/lib64/nginx/modules/ngx_stream_module.so';
+error_log stderr notice;
+
+worker_processes 2;
+worker_rlimit_nofile 130048;
+worker_shutdown_timeout 10s;
+
+events {
+  multi_accept on;
+  use epoll;
+  worker_connections 16384;
+}
+
+stream {
+  upstream kube_apiserver {
+    least_conn;
+    {% for host in groups['k8s-controls'] -%}
+    server {{ hostvars[host]['ansible_default_ipv4']['address'] }}:6443;
+    {% endfor -%}
+  }
+
+  server {
+    #server_name {{ controlPlaneEndpoint }};
+    #listen 80;
+    #listen 443;
+    listen 6443;
+    proxy_pass    kube_apiserver;
+    proxy_timeout 10m;
+    proxy_connect_timeout 1s;
+  }
+}
+
+#http {
+#  aio threads;
+#  aio_write on;
+#  tcp_nopush on;
+#  tcp_nodelay on;
+#
+#  keepalive_timeout 5m;
+#  keepalive_requests 100;
+#  reset_timedout_connection on;
+#  server_tokens off;
+#  autoindex off;
+#}

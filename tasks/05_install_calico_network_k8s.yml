@@ -1,0 +1,20 @@
+- name: Download tigera-operator manifest to the cluster.
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
+    dest: ~/tigera-operator.yaml
+    mode: '0664'
+    
+- name: Apply tigera-operator manifest to the cluster.
+  kubernetes.core.k8s:
+    state: present
+    src: ~/tigera-operator.yaml
+
+- name: DEploy calico network 1
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'tigera-calico-manifest1.yaml.j2') | from_yaml }}"
+
+- name: DEploy calico network 2
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'tigera-calico-manifest2.yaml.j2') | from_yaml }}"

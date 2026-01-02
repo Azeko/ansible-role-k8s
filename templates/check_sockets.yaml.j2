@@ -1,0 +1,10 @@
+{{ ansible_ssh_host }}:
+{% for host in groups['ceph_nodes'] %}
+        {{ hostvars[host].ansible_ssh_host }}:
+                - 3300
+                - 6789
+                - 6800
+                - 6801
+                - 6804
+                - 6805
+{% endfor %}

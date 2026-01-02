@@ -1,0 +1,161 @@
+---
+  # https://kubernetes.io/docs/setup/production-environment/container-runtimes/#containerd
+- name: install kubernetes module requirements
+  ansible.builtin.pip:
+    name:
+      - kubernetes>=12.0.0
+      - PyYAML>=3.11
+      - jsonpatch
+  tags: prepare_k8s
+
+
+- name: add docker repository to install containerd
+  shell: dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  tags: 
+    - containerd
+    - prepare_k8s
+
+- name: install containerd
+  yum:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+  with_items:
+    - {name: "containerd.io", state: present }
+    - {name: "vim", state: present }
+    - {name: "bash-completion", state: present }
+    - {name: "nfs-utils", state: present }
+    - {name: "lvm2", state: present }  # required for rook.io
+    - {name: "rsync", state: present }
+  tags: 
+    - containerd
+    - prepare_k8s
+  
+- name: configure containerd
+  shell: containerd config default > /etc/containerd/config.toml
+  tags: 
+    - containerd
+    - prepare_k8s
+  
+- name: ensures directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+    - /etc/systemd/system/containerd.service.d/
+  tags: 
+    - containerd
+    - prepare_k8s
+  
+- name: generate containerd.service.d/override.conf
+  template:
+    src: "etc/systemd/system/containerd.service.d/override.conf.j2"
+    dest: "/etc/systemd/system/containerd.service.d/override.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  tags: 
+    - containerd
+    - prepare_k8s
+  
+- name: enable and start containerd
+  service:
+    name: containerd
+    state: started
+    enabled: yes
+  tags: 
+    - containerd
+    - prepare_k8s
+  
+- name: add kernel module br_netfilter
+  shell:
+    cmd: |
+      cat > /etc/modules-load.d/k8s.conf <<EOF
+      br_netfilter
+      EOF
+  tags: 
+    - br_netfilter
+    - prepare_k8s
+  
+- name: load kernel module br_netfilter
+  shell: modprobe br_netfilter
+  tags: 
+    - br_netfilter
+    - prepare_k8s
+  
+- name: add kubernetes repository
+  yum_repository:
+    name: Kubernetes
+    description: kubernetes repository
+    baseurl: "{{ k8s_repo_baseurl }}"
+    enabled: 1
+    gpgcheck: 1
+    repo_gpgcheck: 0
+    gpgkey: "{{ k8s_repo_baseurl }}repodata/repomd.xml.key"
+  tags: prepare_k8s
+
+# https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/#installing-kubeadm-kubelet-and-kubectl
+- name: install kubernetes runtime
+  yum:
+    name: "{{ item.name }}"
+    state: "{{ item.state }}"
+  with_items:
+    - {name: "kubectl-{{ k8s_version }}", state: present }
+    - {name: "kubelet-{{ k8s_version }}", state: present }
+    - {name: "kubeadm-{{ k8s_version }}", state: present }
+  tags: prepare_k8s
+
+- name: configure kubectl autocompletion
+  shell: kubectl completion bash > /etc/bash_completion.d/kubectl
+  tags: 
+    - prepare_k8s
+
+- name: enable and start kubelet
+  service:
+    name: kubelet
+    state: started
+    enabled: yes
+  tags: prepare_k8s
+
+- name: exclude calico interfaces from NetworkManager
+  shell:
+    cmd: |
+      cat > /etc/NetworkManager/conf.d/calico.conf <<EOF
+      [keyfile]
+      unmanaged-devices=interface-name:cali*;interface-name:tunl*;interface-name:vxlan.calico;interface-name:vxlan-v6.calico;interface-name:wireguard.cali;interface-name:wg-v6.cali
+      EOF
+  tags: 
+    - calico
+    - prepare_k8s
+  
+ # https://projectcalico.docs.tigera.io/getting-started/kubernetes/quickstart#before-you-begin
+- name: restart NetworkManager to apply changes
+  service:
+    name: NetworkManager
+    state: restarted
+  tags: 
+    - calico
+    - prepare_k8s
+  
+- name: install calicoctl
+  shell: https_proxy={{ http_proxy }} curl -L https://github.com/projectcalico/calico/releases/latest/download/calicoctl-linux-amd64 -o /usr/local/bin/calicoctl && chmod +x /usr/local/bin/calicoctl
+  tags: 
+    - calico
+    - prepare_k8s
+#https://kubernetes.io/docs/tasks/debug/debug-cluster/crictl/#general-usage
+- name: Set crictl rintime-endpoint and image-endpoint
+  ansible.builtin.shell:  |
+    crictl config --set runtime-endpoint=unix:///run/containerd/containerd.sock
+    crictl config --set image-endpoint=unix:///run/containerd/containerd.sock
+  tags: prepare_k8s
+
+- name : generate /etc/hosts
+  template: 
+    src: "etc/hosts.j2"
+    dest: /etc/hosts 
+    mode: 0644
+  register: gen_hosts_result
+  tags: prepare_k8s
+
+- debug:
+      var: gen_hosts_result
+  tags: prepare_k8s

@@ -1,0 +1,32 @@
+- name: install haproxy
+  yum:
+    name: haproxy
+    state: latest
+  notify: 
+    - haproxy started
+
+- name: enable haproxy
+  systemd:
+    name: "haproxy"
+    enabled: yes
+
+- name: create /run/haproxy directory
+  file:
+    path: "/run/haproxy"
+    state: directory
+    owner: haproxy
+
+- name: write haproxy conf
+  template:
+    src: "etc/haproxy/haproxy.j2"
+    dest: "/etc/haproxy/haproxy.cfg"
+    owner: root
+    mode: 0755
+    backup: yes
+  notify: 
+    - haproxy reloaded
+
+- name: haproxy restarted
+  ansible.builtin.service:
+    name: haproxy
+    state: restarted

@@ -1,0 +1,27 @@
+---
+# defaults file for ansible-role-k8s/deploy-k8s-cluster
+k8s_version: 1.28.1
+k8s_repo_baseurl: 'https://pkgs.k8s.io/core:/stable:/v1.28/rpm/'
+calico_version: v3.26.1
+
+helm_version: '3.12.3'
+flux_gitlab_branch: 'main'
+flux_gitlab_hostname: 'gitlab.sirena-travel.ru'
+flux_gitlab_path: 'deploy'
+# The CPU architecture of the Helm executable to install
+helm_architecture: 'amd64'
+
+# Mirror to download Helm from
+helm_mirror: 'https://get.helm.sh'
+
+# Dir where Helm should be installed
+helm_install_dir: '/usr/local/share/helm'
+
+# Directory to store files downloaded for Helm
+helm_download_dir: "{{ x_ansible_download_dir | default(ansible_env.HOME + '/.ansible/tmp/downloads') }}"
+
+ansible_role_k8s_repo_url: "https://github.com/Azeko/ansible-role-k8s"
+ansible_role_k8s_repo_location: "/opt/ansible-role-k8s/"
+ansible_role_k8s_repo_version: "master"
+
+no_proxy: ""

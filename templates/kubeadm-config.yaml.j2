@@ -1,0 +1,18 @@
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: ClusterConfiguration
+kubernetesVersion: stable
+clusterName: {{ clusterName  }}
+networking:
+  podSubnet: {{ clusterNetworking_podSubnet }}
+  serviceSubnet: {{ clusterNetworking_serviceSubnet }}
+  dnsDomain: {{ clusterNetworking_dnsDomain }}
+apiServer:
+  certSANs:
+  {% for host in groups['k8s-controls'] -%}
+  - {{ hostvars[host]['ansible_default_ipv4']['address'] }}
+  {% endfor -%} 
+  - 127.0.0.1
+controlPlaneEndpoint: 127.0.0.1:7443
+etcd:
+  local:
+    dataDir: "/var/lib/etcd"

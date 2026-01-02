@@ -1,0 +1,67 @@
+---
+# tasks file for ansible-role-k8s/deploy-k8s-cluster
+- name: Install and configure HAProxy
+  include_tasks: tasks/01_install_and_configure_haproxy.yml
+  when: inventory_hostname in groups['k8s-nodes']
+
+- name: Prepare servers for k8s
+  include_tasks: tasks/02_prepare_servers_for_k8s.yml
+  when: inventory_hostname in groups['k8s-nodes']
+  tags: 
+    - containerd
+    - prepare_k8s
+    - calico
+    - br_netfilter
+      
+- name: Config kubeadm
+  include_tasks: tasks/03_init_k8s.yml 
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  == bootstrapNodeIP 
+  tags: init_k8s
+
+- name: Join worker nodes
+  include_tasks: tasks/04_join_nodes_k8s.yml
+  when: inventory_hostname in groups['k8s-nodes']
+  tags: join_nodes
+
+- name: Create kube network
+  include_tasks: tasks/05_install_calico_network_k8s.yml   
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  == bootstrapNodeIP 
+  tags: calico_k8s
+
+- name: Set env 
+  include_tasks: tasks/06_set_env.yml
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+  tags: 
+    - set_no_proxy
+    - set_env
+
+- name: Install helm
+  include_tasks: tasks/07_install_helm.yml
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+  tags: helm
+
+- name: Install flux
+  include_tasks: tasks/08_install_flux.yml
+  when:
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  == bootstrapNodeIP
+    - flux_gitlab_group != ""
+    - flux_gitlab_repo != ""
+    - flux_gitlab_token != ""
+  tags: flux
+
+- name: nagios check haproxy backends
+  include_tasks: tasks/09_nagios_check.yml
+  when: inventory_hostname in groups['k8s-nodes']
+  tags: nagios
+
+- name: nagios update
+  include_tasks: tasks/10_nagios_update.yml
+  when: inventory_hostname in groups['nagios']
+  tags: nagios

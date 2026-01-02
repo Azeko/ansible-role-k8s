@@ -1,0 +1,122 @@
+- name: Retrieve Kubernetes join command that is used to join worker node(s)
+  command: kubeadm token create --print-join-command
+  register: join_command
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  == bootstrapNodeIP
+  tags: join_nodes
+
+- name: debug join command
+  debug:
+    var: join_command
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  == bootstrapNodeIP
+  tags: join_nodes
+
+- name: kube cert
+  shell: kubeadm init phase upload-certs --upload-certs --config /tmp/kubeadm-config.yaml | tail -n 1
+  register: cert_command
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  == bootstrapNodeIP
+  tags: join_nodes
+
+- name: debug cert_command
+  debug:
+    var: cert_command
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  == bootstrapNodeIP
+  tags: join_nodes
+
+- name: Check if file already exists
+  command: "ls /etc/kubernetes/kubelet.conf"
+  register: kubelet_file_exists
+  when: 
+    - inventory_hostname in groups['k8s-nodes']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  != bootstrapNodeIP
+  ignore_errors: true
+  tags: join_nodes
+
+- name: Control inventory_hostname
+  set_fact:
+    control_node_list: "{{ groups['k8s-controls'] | map('extract', hostvars) | selectattr('ansible_default_ipv4.address', 'equalto', bootstrapNodeIP) | map(attribute='inventory_hostname') | list }}" 
+  when: 
+    - inventory_hostname in groups['k8s-nodes']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  != bootstrapNodeIP
+  tags: join_nodes
+
+- debug:
+    msg: "{{ control_node_list[0] }}"
+  when: 
+    - inventory_hostname in groups['k8s-workers']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  != bootstrapNodeIP
+  tags: join_nodes
+
+- name: Control inventory_hostname
+  set_fact:
+    control_node: "{{ control_node_list[0] }}" 
+  when: 
+    - inventory_hostname in groups['k8s-nodes']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  != bootstrapNodeIP      
+  tags: join_nodes
+
+- name: Join worker nodes
+  command: "{{ hostvars[control_node].join_command.stdout }}"
+  when: 
+    - inventory_hostname in groups['k8s-workers']
+    - kubelet_file_exists is failed
+  register: join_execute
+  tags: join_nodes
+
+- debug:
+    var: join_execute
+  tags: join_nodes
+  when: 
+    - inventory_hostname in groups['k8s-workers']
+    - kubelet_file_exists is failed
+  tags: join_nodes
+
+- name: Join control nodes
+  command: "{{ hostvars[control_node].join_command.stdout }} --control-plane --certificate-key {{ hostvars[control_node].cert_command.stdout }}"
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  != bootstrapNodeIP
+    - kubelet_file_exists is failed
+  register: join_control_execute
+  tags: join_nodes
+
+#- name: Edit kubelete.conf
+#  lineinfile:
+#    path: /etc/kubernetes/kubelet.conf
+#    search_string: 'server'
+#    line: '    server: https://127.0.0.1:7443'
+#  notify:
+#    - kubelet restart
+#    - containerd restart
+#  tags: join_nodes
+
+- debug:
+    var: join_control_execute
+  tags: join_nodes
+
+- name: Create config directory
+  file:
+    path: "~/.kube"
+    state: directory
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  != bootstrapNodeIP
+  tags: join_nodes
+
+- name: Copy config for user
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "~/.kube/config"
+    remote_src: yes
+  when: 
+    - inventory_hostname in groups['k8s-controls']
+    - hostvars[inventory_hostname]['ansible_default_ipv4']['address']  != bootstrapNodeIP
+  tags: join_nodes
+
