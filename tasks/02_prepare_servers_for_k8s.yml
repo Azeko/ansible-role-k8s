@@ -147,15 +147,3 @@
     crictl config --set runtime-endpoint=unix:///run/containerd/containerd.sock
     crictl config --set image-endpoint=unix:///run/containerd/containerd.sock
   tags: prepare_k8s
-
-- name : generate /etc/hosts
-  template: 
-    src: "etc/hosts.j2"
-    dest: /etc/hosts 
-    mode: 0644
-  register: gen_hosts_result
-  tags: prepare_k8s
-
-- debug:
-      var: gen_hosts_result
-  tags: prepare_k8s
