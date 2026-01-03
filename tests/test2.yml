@@ -1,9 +1,0 @@
-- hosts: localhost
-  remote_user: root
-  tasks:
-    - name: Edit kubelete.conf
-      lineinfile:
-        path: /home/vaslin/Sirena_repos/ansible-role-k8s/tests/kubelet.conf
-          #regexp: '^(server).*'
-        search_string: 'server'
-        line: '    server: https://127.0.0.1:6443'

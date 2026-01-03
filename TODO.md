@@ -1,0 +1,3 @@
+- [ ] Rewrite all NetworkManager code into Netplan because Ubuntu uses it by default
+- [ ] Rewrite this code from RHEL to Ubuntu
+- [ ] Move variables from vars/main.yml into defaults/main.yml

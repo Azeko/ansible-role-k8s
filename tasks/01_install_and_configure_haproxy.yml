@@ -1,5 +1,5 @@
 - name: install haproxy
-  yum:
+  package:
     name: haproxy
     state: latest
   notify: 

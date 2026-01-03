@@ -87,16 +87,6 @@
   register: join_control_execute
   tags: join_nodes
 
-#- name: Edit kubelete.conf
-#  lineinfile:
-#    path: /etc/kubernetes/kubelet.conf
-#    search_string: 'server'
-#    line: '    server: https://127.0.0.1:7443'
-#  notify:
-#    - kubelet restart
-#    - containerd restart
-#  tags: join_nodes
-
 - debug:
     var: join_control_execute
   tags: join_nodes

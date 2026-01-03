@@ -1,16 +1,5 @@
 ---
 # handlers file for ansible-role-k8s/deploy-k8s-cluster
-- name: nginx started
-  ansible.builtin.service:
-    name: nginx
-    enabled: yes
-    state: started
-
-- name: nginx reloaded 
-  ansible.builtin.service:
-    name: nginx
-    state: reloaded
-
 - name: haproxy started
   ansible.builtin.service:
     name: haproxy

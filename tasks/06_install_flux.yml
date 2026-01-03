@@ -3,6 +3,7 @@
   register: install_file_exists
   ignore_errors: true
   tags: flux
+
 - name: download flux install script
   uri:
     url: 'https://fluxcd.io/install.sh'
