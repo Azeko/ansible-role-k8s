@@ -1,3 +1,3 @@
 - [ ] Rewrite all NetworkManager code into Netplan because Ubuntu uses it by default
 - [ ] Rewrite this code from RHEL to Ubuntu
-- [ ] Move variables from vars/main.yml into defaults/main.yml
+- [ ] Find a replacement for nagios that is going to execute files/scripts/check_haproxy_backends.py and notify

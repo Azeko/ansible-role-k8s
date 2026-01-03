@@ -13,7 +13,7 @@
   tags: flux
   when: install_file_exists is failed 
 
-- name: chmode install.sh
+- name: chmod install.sh
   ansible.builtin.file:
     path: /tmp/install.sh
     mode: "0755"
