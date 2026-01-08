@@ -1,3 +1,8 @@
+- name: update apt cache
+  apt:
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
 - name: install haproxy
   package:
     name: haproxy
