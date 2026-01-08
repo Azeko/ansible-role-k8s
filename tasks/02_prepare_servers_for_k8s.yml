@@ -1,5 +1,11 @@
 ---
   # https://kubernetes.io/docs/setup/production-environment/container-runtimes/#containerd
+- name: install python3-pip
+  apt:
+    name: python3-pip
+    state: present
+  tags: prepare_k8s
+
 - name: install kubernetes module requirements
   ansible.builtin.pip:
     name:
