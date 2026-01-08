@@ -12,6 +12,7 @@
       - kubernetes>=12.0.0
       - PyYAML>=3.11
       - jsonpatch
+    extra_args: --break-system-packages
   tags: prepare_k8s
 
 
